@@ -1,0 +1,39 @@
+---
+title: |
+  ![](logo_dm_uba.png){width=1in}  
+  Análisis de series temporales de operaciones canceladas
+author: "Lic. Malena Álvarez Brito, Ing. Florencia Florio"
+date: "`r format(Sys.time(), '%B %Y')`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_caption: true
+    includes:
+      in_header: header.tex
+  html_document: default
+mainfont: Arial
+---
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+> **Resumen**: Este es el resumen (aproximadamente 250 palabras).
+
+> Palabras clave: series de tiempo
+
+# Introducción
+
+# Hipótesis y objetivos
+
+# Material y métodos
+
+# Resultados
+
+# Discusión y conclusiones
+
+# Bibliografía
