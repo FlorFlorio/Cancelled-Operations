@@ -6,10 +6,33 @@ library(seasonal) # seas()
 
 df <- readRDS("data/processed/cancelled_operations_1994_to_2019.rds")
 
+df %>% 
+  pivot_longer(2:6, names_to = "serie", values_to = "valor") %>% 
+  filter(serie %in% c("cancelled_operations",
+                      "patients_not_treated_28_days")) %>% 
+  ggplot(aes(x = year_quarter, y = valor, col = serie)) +
+  geom_line(group = 1) + 
+  xlab("") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+df %>% 
+  pivot_longer(2:6, names_to = "serie", values_to = "valor") %>% 
+  # filter(serie %in% c("cancelled_operations",
+  #                     "patients_not_treated_28_days")) %>% 
+  ggplot(aes(x = year_quarter, y = valor)) +
+  geom_line(group = 1) + 
+  facet_grid(vars(serie), scales = "free_y") +
+  xlab("") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
 ggplot(df, aes(x = year_quarter, y = cancelled_operations)) +
   geom_line(group = 1) + 
   xlab("") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+# convert to ts
+x <- xts(df[,5], order.by = as.yearqtr(df$year_quarter))
+tt <- as.ts(as.zoo(x))
 
 autoplot(tt)
 
@@ -18,10 +41,6 @@ fft <- fft(df$cancelled_operations)
 glimpse(fft)
 
 ggplot() + geom_line(aes(x = seq_along(fft), y = Mod(fft)))
-
-# convert to ts
-x <- xts(df[,2], order.by = as.yearqtr(df$year_quarter))
-tt <- as.ts(as.zoo(x))
 
 # Decomposition ----
 # moving average
@@ -98,3 +117,50 @@ autoplot(tt) +
   ggtitle("Google stock (daily ending 6 Dec 2013)") +
   xlab("Day") + ylab("Closing Price (US$)") +
   guides(colour=guide_legend(title="Forecast"))
+
+# Correlation ----
+# day beds
+day_beds_occupancy <- readRDS("data/processed/day_beds_occupancy_2010Q1_to_2020Q1.rds")
+
+x2 <- xts(day_beds_occupancy[,2], order.by = as.yearqtr(day_beds_occupancy$year_quarter))
+tt2 <- as.ts(as.zoo(x2))
+
+autoplot(tt2)
+
+df2 <- df %>%
+  filter(year_quarter >= "2010 Q1") %>%
+  select(cancelled_operations_perc) %>%
+  as.numeric() %>%
+  unlist()
+
+bo <- day_beds_occupancy %>%
+  filter(year_quarter <= "2019 Q3") %>%
+  select(occupancy_all_types) %>%
+  #as.numeric() %>%
+  unlist()
+
+# correlacion cruzada con convolve
+ts_corr <- convolve(df2, bo, conj = TRUE) # se usa el conjugado
+plot(1:length(ts_corr), ts_corr , type = 'l')
+
+ccf(df2, bo, lag.max = 39)
+
+# overnight beds
+on_beds_occupancy <- readRDS("data/processed/overnight_beds_occupancy_2010Q1_to_2020Q1.rds")
+
+x2 <- xts(on_beds_occupancy[,2], order.by = as.yearqtr(on_beds_occupancy$year_quarter))
+tt2 <- as.ts(as.zoo(x2))
+
+autoplot(tt2)
+
+bo <- on_beds_occupancy %>%
+  filter(year_quarter <= "2019 Q3") %>%
+  select(occupancy_all_types) %>%
+  #as.numeric() %>%
+  unlist()
+
+# correlacion cruzada con convolve
+ts_corr <- convolve(df2, bo, conj = TRUE) # se usa el conjugado
+plot(1:length(ts_corr), ts_corr , type = 'l')
+
+ccf(df2, bo, lag.max = 39)
