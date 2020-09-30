@@ -1,0 +1,201 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+  \setmainfont[]{Arial}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={ Análisis de series temporales de operaciones canceladas},
+  pdfauthor={Lic. Malena Álvarez Brito, Ing. Florencia Florio},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{longtable,booktabs}
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{5}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhead[LE,RO]{M. Álvarez Brito, F. Florio}
+
+\title{\includegraphics[width=1in,height=\textheight]{logo_dm_uba.png}\\
+Análisis de series temporales de operaciones canceladas}
+\author{Lic. Malena Álvarez Brito, Ing. Florencia Florio}
+\date{septiembre 2020}
+
+\begin{document}
+\maketitle
+
+\begin{quote}
+\textbf{Resumen}: Este es el resumen (aproximadamente 250 palabras).
+\end{quote}
+
+\begin{quote}
+Palabras clave: series de tiempo
+\end{quote}
+
+\hypertarget{introducciuxf3n}{%
+\section{Introducción}\label{introducciuxf3n}}
+
+Introducción. Explicar de dónde viene el dataset. Qué significa cada
+valor. Periodicidad de la serie (frecuencia de muestreo). Qué se
+entiende por operación ``electiva''. Qué tipo de instituciones son?
+públicas y privadas? O sólo públicas?
+
+\hypertarget{hipuxf3tesis-y-objetivos}{%
+\section{Hipótesis y objetivos}\label{hipuxf3tesis-y-objetivos}}
+
+Hipótesis y objetivos.
+
+Objetivo: analizar la serie de tiempo de operaciones canceladas para
+descubrir patrones en su comportamiento, ver si existe correlación con
+ocupación de las camas de internación, hacer forecasting de porcentaje
+de cancelación. Todo esto podría contribuir a una mejor asignación de
+recursos del sistema de salud y toma de decisión de gestión sanitaria.
+
+\hypertarget{material-y-muxe9todos}{%
+\section{Material y métodos}\label{material-y-muxe9todos}}
+
+Material y métodos.
+
+R, RStudio. Librerías: tidyverse, zoo, xts, forecast, seasonal.
+
+\hypertarget{resultados}{%
+\section{Resultados}\label{resultados}}
+
+Gráfico de todas las series en el dataset de operaciones canceladas.
+
+Algo pasó en 2001 que aumentó el porcentaje de cancelaciones (casi el
+doble que en otros trimestres).
+
+\includegraphics{cancelled_operations_report_files/figure-latex/series-1.pdf}
+
+Viendo el filtro moving average también se evidencia el aumento en 2001.
+
+\begin{verbatim}
+## Warning: Removed 4 row(s) containing missing values (geom_path).
+\end{verbatim}
+
+\includegraphics{cancelled_operations_report_files/figure-latex/moving-average-1.pdf}
+
+En el siguiente gráfico se ve que el pico fue en realidad en el último
+trimestre de 2000 pero que todo el 2000 fue alto. También el 2001 fue
+alto, aunque luego fue bajando.
+
+Yo veo, además, que el primer y segundo trimestres suelen ser más bajos
+que el tercero y el cuarto.
+
+\includegraphics{cancelled_operations_report_files/figure-latex/seasonal-plot-year-1.pdf}
+
+En el siguiente gráfico se ve que los primeros dos trimestres son, en
+promedio, más bajos que el tercero y el cuarto.
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/seasonal-plot-quarter-1} \end{center}
+
+Autocorrelación
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/acf-1} \end{center}
+
+Gráfico de la fft de porcentaje de operaciones canceladas. Se distinguen
+2 picos bien marcados (a parte del valor del índice 1\ldots este sería
+el valor de continua???)
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/fft-1} \end{center}
+
+\begin{longtable}[]{@{}rr@{}}
+\toprule
+valor & posicion\tabularnewline
+\midrule
+\endhead
+1677577.0 & 1\tabularnewline
+136952.8 & 3\tabularnewline
+119513.9 & 27\tabularnewline
+\bottomrule
+\end{longtable}
+
+Descomposición de la señal. El cuarto gráfico es como el de moving
+average. Después podemos ver con cuál nos quedamos.
+
+\includegraphics{cancelled_operations_report_files/figure-latex/classical-decomposition-1.pdf}
+
+\hypertarget{forecasting}{%
+\subsection{Forecasting}\label{forecasting}}
+
+Forecast simple (preliminar).
+
+\includegraphics{cancelled_operations_report_files/figure-latex/forecast-1.pdf}
+
+\hypertarget{correlaciuxf3n-con-ocupaciuxf3n-de-camas}{%
+\subsection{Correlación con ocupación de
+camas}\label{correlaciuxf3n-con-ocupaciuxf3n-de-camas}}
+
+Correlación con ocupación de camas por el día.
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-day-beds-1} \end{center}
+
+Correlación con camas día+noche.
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-overnight-beds-1} \end{center}
+
+\hypertarget{discusiuxf3n-y-conclusiones}{%
+\section{Discusión y conclusiones}\label{discusiuxf3n-y-conclusiones}}
+
+\hypertarget{bibliografuxeda}{%
+\section{Bibliografía}\label{bibliografuxeda}}
+
+\end{document}

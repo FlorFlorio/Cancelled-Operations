@@ -4,9 +4,9 @@ library(xts)
 library(forecast)
 library(seasonal) # seas()
 
-df <- readRDS("data/processed/cancelled_operations_1994_to_2019.rds")
+operations <- readRDS("data/processed/cancelled_operations_1994_to_2019.rds")
 
-df %>% 
+operations %>% 
   pivot_longer(2:6, names_to = "serie", values_to = "valor") %>% 
   filter(serie %in% c("cancelled_operations",
                       "patients_not_treated_28_days")) %>% 
@@ -15,32 +15,42 @@ df %>%
   xlab("") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-df %>% 
+operations %>% 
   pivot_longer(2:6, names_to = "serie", values_to = "valor") %>% 
-  # filter(serie %in% c("cancelled_operations",
-  #                     "patients_not_treated_28_days")) %>% 
+  filter(serie %in% c("elective_admissions",
+                      "cancelled_operations_perc",
+                      "patients_not_treated_28_days_perc")) %>%
   ggplot(aes(x = year_quarter, y = valor)) +
   geom_line(group = 1) + 
   facet_grid(vars(serie), scales = "free_y") +
   xlab("") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-ggplot(df, aes(x = year_quarter, y = cancelled_operations)) +
+ggplot(operations, aes(x = year_quarter, y = cancelled_operations)) +
   geom_line(group = 1) + 
   xlab("") +
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 # convert to ts
-x <- xts(df[,5], order.by = as.yearqtr(df$year_quarter))
+x <- xts(operations[,"cancelled_operations_perc"], order.by = as.yearqtr(operations$year_quarter))
 tt <- as.ts(as.zoo(x))
 
 autoplot(tt)
 
 # calcular la transformada rápida de fourier
-fft <- fft(df$cancelled_operations)
+fft <- fft(operations$cancelled_operations)
 glimpse(fft)
 
-ggplot() + geom_line(aes(x = seq_along(fft), y = Mod(fft)))
+# me quedo con la primer mitad (el vector completo está espejado a la mitad)
+mod_fft <- Mod(fft)
+mod_fft <- mod_fft[1:ceiling(length(mod_fft)/2)]
+
+ggplot() + geom_line(aes(x = seq_along(mod_fft), y = mod_fft))
+
+# dónde y cuáles son los picos de la fft?
+picos_fft <- data.frame(valor = mod_fft[order(mod_fft, decreasing=TRUE)[1:3], drop=FALSE],
+                        posicion = order(mod_fft, decreasing=TRUE)[1:3])
+picos_fft
 
 # Decomposition ----
 # moving average
@@ -56,16 +66,16 @@ ggseasonplot(tt, year.labels = TRUE, year.labels.left = TRUE) +
   ylab("Cancelled operations") +
   ggtitle("Seasonal plot: cancelled operations")
 
-ggseasonplot(tt, polar = TRUE) +
-  ylab("Cancelled operations") +
-  ggtitle("Seasonal plot: cancelled operations")
+# ggseasonplot(tt, polar = TRUE) +
+#   ylab("Cancelled operations") +
+#   ggtitle("Seasonal plot: cancelled operations")
 
 ggsubseriesplot(tt) +
   ylab("Cancelled operations") +
   ggtitle("Seasonal subseries plot: cancelled operations")
 
 autoplot(tt)
-gglagplot(tt)
+#gglagplot(tt)
 ggAcf(tt)
 
 # classical decomposition
@@ -127,40 +137,43 @@ tt2 <- as.ts(as.zoo(x2))
 
 autoplot(tt2)
 
-df2 <- df %>%
+# filtro para que empiece desde el mismo punto que la serie de las camas
+operations_2010_2019 <- operations %>%
   filter(year_quarter >= "2010 Q1") %>%
   select(cancelled_operations_perc) %>%
-  as.numeric() %>%
   unlist()
 
-bo <- day_beds_occupancy %>%
+day_beds_occupancy_2010_2019 <- day_beds_occupancy %>%
   filter(year_quarter <= "2019 Q3") %>%
   select(occupancy_all_types) %>%
-  #as.numeric() %>%
   unlist()
 
 # correlacion cruzada con convolve
-ts_corr <- convolve(df2, bo, conj = TRUE) # se usa el conjugado
+ts_corr <- convolve(operations_2010_2019,
+                    day_beds_occupancy_2010_2019,
+                    conj = TRUE) # se usa el conjugado
 plot(1:length(ts_corr), ts_corr , type = 'l')
 
-ccf(df2, bo, lag.max = 39)
+# correlación con ccf
+ccf(operations_2010_2019, day_beds_occupancy_2010_2019, lag.max = 39)
 
 # overnight beds
-on_beds_occupancy <- readRDS("data/processed/overnight_beds_occupancy_2010Q1_to_2020Q1.rds")
+night_beds_occupancy <- readRDS("data/processed/overnight_beds_occupancy_2010Q1_to_2020Q1.rds")
 
-x2 <- xts(on_beds_occupancy[,2], order.by = as.yearqtr(on_beds_occupancy$year_quarter))
+x2 <- xts(night_beds_occupancy[,2], order.by = as.yearqtr(night_beds_occupancy$year_quarter))
 tt2 <- as.ts(as.zoo(x2))
 
 autoplot(tt2)
 
-bo <- on_beds_occupancy %>%
+night_beds_occupancy_2010_2019 <- night_beds_occupancy %>%
   filter(year_quarter <= "2019 Q3") %>%
   select(occupancy_all_types) %>%
-  #as.numeric() %>%
   unlist()
 
 # correlacion cruzada con convolve
-ts_corr <- convolve(df2, bo, conj = TRUE) # se usa el conjugado
+ts_corr <- convolve(operations_2010_2019,
+                    night_beds_occupancy_2010_2019,
+                    conj = TRUE) # se usa el conjugado
 plot(1:length(ts_corr), ts_corr , type = 'l')
 
-ccf(df2, bo, lag.max = 39)
+ccf(operations_2010_2019, night_beds_occupancy_2010_2019, lag.max = 39)
