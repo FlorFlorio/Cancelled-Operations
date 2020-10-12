@@ -76,17 +76,21 @@
 \title{\includegraphics[width=1in,height=\textheight]{logo_dm_uba.png}\\
 Análisis de series temporales de operaciones canceladas}
 \author{Lic. Malena Álvarez Brito, Ing. Florencia Florio}
-\date{septiembre 2020}
+\date{octubre 2020}
 
 \begin{document}
 \maketitle
 
 \begin{quote}
-\textbf{Resumen}: Este es el resumen (aproximadamente 250 palabras).
+\textbf{Resumen}: Este es el resumen. Este es el resumen. Este es el
+resumen. Este es el resumen. Este es el resumen. Este es el resumen.
+Este es el resumen. Este es el resumen. Este es el resumen. Este es el
+resumen. Este es el resumen. Este es el resumen. Este es el resumen.
+(aproximadamente 250 palabras).
 \end{quote}
 
 \begin{quote}
-Palabras clave: series de tiempo
+Palabras clave: series de tiempo, sistema de salud, forecasting
 \end{quote}
 
 \hypertarget{introducciuxf3n}{%
@@ -118,10 +122,24 @@ R, RStudio. Librerías: tidyverse, zoo, xts, forecast, seasonal.
 \hypertarget{resultados}{%
 \section{Resultados}\label{resultados}}
 
-Gráfico de todas las series en el dataset de operaciones canceladas.
+Gráfico temporal de todas las series en el dataset de operaciones
+canceladas.
 
-Algo pasó en 2001 que aumentó el porcentaje de cancelaciones (casi el
-doble que en otros trimestres).
+\hypertarget{respecto-al-porcentaje-de-cancelaciones}{%
+\subsubsection{Respecto al porcentaje de
+cancelaciones}\label{respecto-al-porcentaje-de-cancelaciones}}
+
+Fuerte estacionalidad (sube, baja, sube, baja). Algo pasó en 2001 que
+aumentó el porcentaje de cancelaciones (casi el doble que en otros
+trimestres). Además, entre el 2000 y el 2010 parecería haber una
+tendencia a disminuir. Luego, en 2010 parece haber un cambio de
+tendencia y empieza a aumentar ligeramente.
+
+\hypertarget{respecto-al-total-de-opraciones}{%
+\subsubsection{Respecto al total de
+opraciones}\label{respecto-al-total-de-opraciones}}
+
+Clara tendencia a aumentar.
 
 \includegraphics{cancelled_operations_report_files/figure-latex/series-1.pdf}
 
@@ -133,12 +151,17 @@ Viendo el filtro moving average también se evidencia el aumento en 2001.
 
 \includegraphics{cancelled_operations_report_files/figure-latex/moving-average-1.pdf}
 
+\hypertarget{anuxe1lisis-a-partir-de-los-gruxe1ficos-de-estacionalidad}{%
+\subsubsection{Análisis a partir de los gráficos de
+estacionalidad}\label{anuxe1lisis-a-partir-de-los-gruxe1ficos-de-estacionalidad}}
+
 En el siguiente gráfico se ve que el pico fue en realidad en el último
 trimestre de 2000 pero que todo el 2000 fue alto. También el 2001 fue
 alto, aunque luego fue bajando.
 
 Yo veo, además, que el primer y segundo trimestres suelen ser más bajos
-que el tercero y el cuarto.
+que el tercero y el cuarto. El 2010 fue distinto porque el Q4 fue
+bastante menor al Q3.
 
 \includegraphics{cancelled_operations_report_files/figure-latex/seasonal-plot-year-1.pdf}
 
@@ -180,17 +203,65 @@ Forecast simple (preliminar).
 
 \includegraphics{cancelled_operations_report_files/figure-latex/forecast-1.pdf}
 
+\hypertarget{auto-arima-forecast}{%
+\subsubsection{Auto ARIMA forecast}\label{auto-arima-forecast}}
+
+Se aplica un ARIMA automático con estacionalidad.
+
+\begin{verbatim}
+## Series: tt 
+## ARIMA(1,0,0)(0,1,1)[4] 
+## 
+## Coefficients:
+##          ar1     sma1
+##       0.8637  -0.8829
+## s.e.  0.0546   0.0618
+## 
+## sigma^2 estimated as 9.364e-07:  log likelihood=544.63
+## AIC=-1083.25   AICc=-1083   BIC=-1075.47
+\end{verbatim}
+
+\includegraphics{cancelled_operations_report_files/figure-latex/auto-arima-1.pdf}
+
 \hypertarget{correlaciuxf3n-con-ocupaciuxf3n-de-camas}{%
 \subsection{Correlación con ocupación de
 camas}\label{correlaciuxf3n-con-ocupaciuxf3n-de-camas}}
 
-Correlación con ocupación de camas por el día.
+\hypertarget{correlaciuxf3n-con-ocupaciuxf3n-de-camas-por-el-duxeda.}{%
+\paragraph{Correlación con ocupación de camas por el
+día.}\label{correlaciuxf3n-con-ocupaciuxf3n-de-camas-por-el-duxeda.}}
+
+Mirando el gráfico de dispersión, no parece haber una relación tan clara
+entre ambas.
 
 \begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-day-beds-1} \end{center}
 
-Correlación con camas día+noche.
+\begin{verbatim}
+## `geom_smooth()` using formula 'y ~ x'
+\end{verbatim}
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-day-beds-2} \end{center}
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-day-beds-3} \end{center}
+
+\hypertarget{correlaciuxf3n-con-camas-duxedanoche.}{%
+\paragraph{Correlación con camas
+día+noche.}\label{correlaciuxf3n-con-camas-duxedanoche.}}
+
+En el gráfico de dispersión se ve una relación entre ambas. En decir,
+cuando hay mucha ocupación de camas nocturnas, hay mayor porcentaje de
+cancelación de operaciones. Esta relación (aparentemente lineal) no
+implica causalidad.
 
 \begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-overnight-beds-1} \end{center}
+
+\begin{verbatim}
+## `geom_smooth()` using formula 'y ~ x'
+\end{verbatim}
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-overnight-beds-2} \end{center}
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-overnight-beds-3} \end{center}
 
 \hypertarget{discusiuxf3n-y-conclusiones}{%
 \section{Discusión y conclusiones}\label{discusiuxf3n-y-conclusiones}}

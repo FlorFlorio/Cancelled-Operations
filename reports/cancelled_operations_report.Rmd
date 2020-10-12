@@ -23,6 +23,7 @@ library(zoo)
 library(xts)
 library(forecast)
 library(seasonal)
+library(ggpubr)
 ```
 
 ```{r data-loading}
@@ -31,9 +32,9 @@ day_beds_occupancy <- readRDS("data/processed/day_beds_occupancy_2010Q1_to_2020Q
 night_beds_occupancy <- readRDS("data/processed/overnight_beds_occupancy_2010Q1_to_2020Q1.rds")
 ```
 
-> **Resumen**: Este es el resumen (aproximadamente 250 palabras).
+> **Resumen**: Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. Este es el resumen. (aproximadamente 250 palabras).
 
-> Palabras clave: series de tiempo
+> Palabras clave: series de tiempo, sistema de salud, forecasting
 
 # Introducción
 
@@ -53,9 +54,17 @@ R, RStudio. Librerías: tidyverse, zoo, xts, forecast, seasonal.
 
 # Resultados
 
-Gráfico de todas las series en el dataset de operaciones canceladas.
+Gráfico temporal de todas las series en el dataset de operaciones canceladas.
 
+### Respecto al porcentaje de cancelaciones
+
+Fuerte estacionalidad (sube, baja, sube, baja).
 Algo pasó en 2001 que aumentó el porcentaje de cancelaciones (casi el doble que en otros trimestres).
+Además, entre el 2000 y el 2010 parecería haber una tendencia a disminuir. Luego, en 2010 parece haber un cambio de tendencia y empieza a aumentar ligeramente.
+
+### Respecto al total de opraciones
+
+Clara tendencia a aumentar.
 
 ```{r series, fig.height=6}
 operations %>% 
@@ -85,9 +94,11 @@ autoplot(tt, series="Data") +
                       breaks = c("Data", "4-MA"))
 ```
 
+### Análisis a partir de los gráficos de estacionalidad
+
 En el siguiente gráfico se ve que el pico fue en realidad en el último trimestre de 2000 pero que todo el 2000 fue alto. También el 2001 fue alto, aunque luego fue bajando.
 
-Yo veo, además, que el primer y segundo trimestres suelen ser más bajos que el tercero y el cuarto.
+Yo veo, además, que el primer y segundo trimestres suelen ser más bajos que el tercero y el cuarto. El 2010 fue distinto porque el Q4 fue bastante menor al Q3.
 
 ```{r seasonal-plot-year}
 # seasonal plot
@@ -104,10 +115,14 @@ ggsubseriesplot(tt) +
   ggtitle("Seasonal subseries plot: cancelled operations")
 ```
 
-Autocorrelación
+### Autocorrelación
+
+Se ve que el pico más alto está en 4. Esto es porque los datos tienen estacionalidad. Los picos tienden a tener una separación de 4 (observaciones) trimestres. Los múltiplos de 4 también tienen correlación alta pero va bajando. Forman picos debido a la estacionalidad.
+
+El hecho de que la correlación sea positiva en casi todos los lags se debe a que la serie tiene una tendencia positiva.
 
 ```{r acf, fig.height=3, fig.width=5, fig.align='center'}
-ggAcf(tt)
+ggAcf(tt, lag.max = 24)
 ```
 Gráfico de la fft de porcentaje de operaciones canceladas. Se distinguen 2 picos bien marcados (a parte del valor del índice 1...este sería el valor de continua???)
 
@@ -148,43 +163,74 @@ autoplot(tt) +
   guides(colour=guide_legend(title="Forecast"))
 ```
 
+### Auto ARIMA forecast
+
+Se aplica un ARIMA automático con estacionalidad.
+
+```{r auto-arima, fig.height=3}
+arima_fit <- auto.arima(tt, seasonal = TRUE)
+print(arima_fit)
+plot(forecast(arima_fit, h = 20), include = 80)
+```
+
+
 ## Correlación con ocupación de camas
 
-Correlación con ocupación de camas por el día.
+#### Correlación con ocupación de camas por el día.
 
-```{r corr-day-beds, fig.height=3, fig.width=5, fig.align='center'}
-x2 <- xts(day_beds_occupancy[,2], order.by = as.yearqtr(day_beds_occupancy$year_quarter))
-tt2 <- as.ts(as.zoo(x2))
+Mirando el gráfico de dispersión, no parece haber una relación tan clara entre ambas.
 
-#autoplot(tt2)
-
+```{r corr-day-beds, fig.height=2, fig.width=5, fig.align='center'}
 # filtro para que empiece desde el mismo punto que la serie de las camas
 operations_2010_2019 <- operations %>%
   filter(year_quarter >= "2010 Q1") %>%
   select(cancelled_operations_perc) %>%
   unlist()
 
+x2 <- xts(day_beds_occupancy[,2], order.by = as.yearqtr(day_beds_occupancy$year_quarter))
+tt2 <- as.ts(as.zoo(x2))
+
+autoplot(tt2)
+
 day_beds_occupancy_2010_2019 <- day_beds_occupancy %>%
   filter(year_quarter <= "2019 Q3") %>%
   select(occupancy_all_types) %>%
   unlist()
 
+df_db <- data.frame(op_10_19 = operations_2010_2019,
+                 db_10_19 = day_beds_occupancy_2010_2019)
+
+ggscatter(df_db, x = "db_10_19", y = "op_10_19", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Day bed occupancy (%?)", ylab = "Cancelled operations (%)")
+
 # correlación con ccf
 ggCcf(operations_2010_2019, day_beds_occupancy_2010_2019, lag.max = 39)
 ```
 
-Correlación con camas día+noche.
+#### Correlación con camas día+noche.
 
-```{r corr-overnight-beds, fig.height=3, fig.width=5, fig.align='center'}
+En el gráfico de dispersión se ve una relación entre ambas. En decir, cuando hay mucha ocupación de camas nocturnas, hay mayor porcentaje de cancelación de operaciones. Esta relación (aparentemente lineal) no implica causalidad.
+
+```{r corr-overnight-beds, fig.height=2, fig.width=5, fig.align='center'}
 x2 <- xts(night_beds_occupancy[,2], order.by = as.yearqtr(night_beds_occupancy$year_quarter))
 tt2 <- as.ts(as.zoo(x2))
 
-#autoplot(tt2)
+autoplot(tt2)
 
 night_beds_occupancy_2010_2019 <- night_beds_occupancy %>%
   filter(year_quarter <= "2019 Q3") %>%
   select(occupancy_all_types) %>%
   unlist()
+
+df_nb <- data.frame(op_10_19 = operations_2010_2019,
+                    nb_10_19 = night_beds_occupancy_2010_2019)
+
+ggscatter(df_nb, x = "nb_10_19", y = "op_10_19", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Night bed occupancy (%?)", ylab = "Cancelled operations (%)")
 
 # correlacion con ccf
 ggCcf(operations_2010_2019, night_beds_occupancy_2010_2019, lag.max = 39)

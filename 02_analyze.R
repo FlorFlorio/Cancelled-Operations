@@ -36,6 +36,9 @@ x <- xts(operations[,"cancelled_operations_perc"], order.by = as.yearqtr(operati
 tt <- as.ts(as.zoo(x))
 
 autoplot(tt)
+gglagplot(tt)
+ggAcf(tt)
+ggtsdisplay(tt)
 
 # calcular la transformada rápida de fourier
 fft <- fft(operations$cancelled_operations)
@@ -74,15 +77,10 @@ ggsubseriesplot(tt) +
   ylab("Cancelled operations") +
   ggtitle("Seasonal subseries plot: cancelled operations")
 
-autoplot(tt)
-#gglagplot(tt)
-ggAcf(tt)
-
 # classical decomposition
 tt %>% decompose(type="multiplicative") %>%
   autoplot() + xlab("Year") +
-  ggtitle("Classical multiplicative decomposition
-    of cancelled operations index")
+  ggtitle("Classical multiplicative decomposition of cancelled operations index")
 
 # X11 decomposition
 fit <- tt %>% seas(x11 = "")
@@ -108,72 +106,3 @@ tt %>% seas() %>%
 tt %>%
   stl(t.window=13, s.window="periodic", robust=TRUE) %>%
   autoplot()
-
-# Forecasting ----
-# Plot some forecasts
-autoplot(tt) +
-  autolayer(meanf(tt, h=11), series="Mean", PI=FALSE) +
-  autolayer(naive(tt, h=11), series="Naïve", PI=FALSE) +
-  autolayer(snaive(tt, h=11), series="Seasonal naïve", PI=FALSE) +
-  ggtitle("Forecasts for quarterly cancelled operations") +
-  xlab("Year") + ylab("Megalitres") +
-  guides(colour=guide_legend(title="Forecast"))
-
-# non-seasonal forecast
-autoplot(tt) +
-  autolayer(meanf(tt, h=40), series="Mean", PI=FALSE) +
-  autolayer(rwf(tt, h=40), series="Naïve", PI=FALSE) +
-  autolayer(rwf(tt, drift=TRUE, h=40), series="Drift", PI=FALSE) +
-  ggtitle("Google stock (daily ending 6 Dec 2013)") +
-  xlab("Day") + ylab("Closing Price (US$)") +
-  guides(colour=guide_legend(title="Forecast"))
-
-# Correlation ----
-# day beds
-day_beds_occupancy <- readRDS("data/processed/day_beds_occupancy_2010Q1_to_2020Q1.rds")
-
-x2 <- xts(day_beds_occupancy[,2], order.by = as.yearqtr(day_beds_occupancy$year_quarter))
-tt2 <- as.ts(as.zoo(x2))
-
-autoplot(tt2)
-
-# filtro para que empiece desde el mismo punto que la serie de las camas
-operations_2010_2019 <- operations %>%
-  filter(year_quarter >= "2010 Q1") %>%
-  select(cancelled_operations_perc) %>%
-  unlist()
-
-day_beds_occupancy_2010_2019 <- day_beds_occupancy %>%
-  filter(year_quarter <= "2019 Q3") %>%
-  select(occupancy_all_types) %>%
-  unlist()
-
-# correlacion cruzada con convolve
-ts_corr <- convolve(operations_2010_2019,
-                    day_beds_occupancy_2010_2019,
-                    conj = TRUE) # se usa el conjugado
-plot(1:length(ts_corr), ts_corr , type = 'l')
-
-# correlación con ccf
-ccf(operations_2010_2019, day_beds_occupancy_2010_2019, lag.max = 39)
-
-# overnight beds
-night_beds_occupancy <- readRDS("data/processed/overnight_beds_occupancy_2010Q1_to_2020Q1.rds")
-
-x2 <- xts(night_beds_occupancy[,2], order.by = as.yearqtr(night_beds_occupancy$year_quarter))
-tt2 <- as.ts(as.zoo(x2))
-
-autoplot(tt2)
-
-night_beds_occupancy_2010_2019 <- night_beds_occupancy %>%
-  filter(year_quarter <= "2019 Q3") %>%
-  select(occupancy_all_types) %>%
-  unlist()
-
-# correlacion cruzada con convolve
-ts_corr <- convolve(operations_2010_2019,
-                    night_beds_occupancy_2010_2019,
-                    conj = TRUE) # se usa el conjugado
-plot(1:length(ts_corr), ts_corr , type = 'l')
-
-ccf(operations_2010_2019, night_beds_occupancy_2010_2019, lag.max = 39)
