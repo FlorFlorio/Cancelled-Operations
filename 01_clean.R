@@ -10,7 +10,9 @@ names(df) <- c("year", "quarter", "cancelled_operations",
                "cancelled_operations_perc", "patients_not_treated_28_days_perc")
 
 df %>%
-  mutate(year = str_sub(year, 1, 4)) %>%
+  mutate(year = str_sub(year, 1, 4),
+         cancelled_operations_perc = 100*cancelled_operations_perc,
+         patients_not_treated_28_days_perc = 100*patients_not_treated_28_days_perc) %>%
   fill(year) %>% 
   unite(year_quarter, year, quarter, sep = "-") %>% 
   mutate(year_quarter = as.yearqtr(year_quarter)) %>% 
@@ -25,7 +27,11 @@ names(beds_day) <- c("year", "quarter", "occupancy_all_types",
                      "occupancy_mental")
 
 beds_day %>%
-  mutate(year = str_sub(year, 1, 4)) %>%
+  mutate(year = str_sub(year, 1, 4),
+         occupancy_all_types = 100*occupancy_all_types,
+         occupancy_general_and_acute = 100*occupancy_general_and_acute,
+         occupancy_maternity = 100*occupancy_maternity,
+         occupancy_mental = 100*occupancy_mental) %>%
   unite(year_quarter, year, quarter, sep = " ") %>% 
   mutate(year_quarter = as.yearqtr(year_quarter)) %>% 
   saveRDS("data/processed/day_beds_occupancy_2010Q1_to_2020Q1.rds")
@@ -39,7 +45,11 @@ names(beds_overnight) <- c("year", "quarter", "occupancy_all_types",
                            "occupancy_mental")
 
 beds_overnight %>%
-  mutate(year = str_sub(year, 1, 4)) %>%
+  mutate(year = str_sub(year, 1, 4),
+         occupancy_all_types = 100*occupancy_all_types,
+         occupancy_general_and_acute = 100*occupancy_general_and_acute,
+         occupancy_maternity = 100*occupancy_maternity,
+         occupancy_mental = 100*occupancy_mental) %>%
   unite(year_quarter, year, quarter, sep = " ") %>% 
   mutate(year_quarter = as.yearqtr(year_quarter)) %>% 
   saveRDS("data/processed/overnight_beds_occupancy_2010Q1_to_2020Q1.rds")

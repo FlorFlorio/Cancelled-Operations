@@ -37,7 +37,7 @@
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
 \hypersetup{
-  pdftitle={ Análisis de series temporales de operaciones canceladas},
+  pdftitle={ Análisis de series temporales de operaciones canceladas en Inglaterra},
   pdfauthor={Lic. Malena Álvarez Brito, Ing. Florencia Florio},
   hidelinks,
   pdfcreator={LaTeX via pandoc}}
@@ -74,7 +74,7 @@
 \fancyhead[LE,RO]{M. Álvarez Brito, F. Florio}
 
 \title{\includegraphics[width=1in,height=\textheight]{logo_dm_uba.png}\\
-Análisis de series temporales de operaciones canceladas}
+Análisis de series temporales de operaciones canceladas en Inglaterra}
 \author{Lic. Malena Álvarez Brito, Ing. Florencia Florio}
 \date{octubre 2020}
 
@@ -82,11 +82,15 @@ Análisis de series temporales de operaciones canceladas}
 \maketitle
 
 \begin{quote}
-\textbf{Resumen}: Este es el resumen. Este es el resumen. Este es el
-resumen. Este es el resumen. Este es el resumen. Este es el resumen.
-Este es el resumen. Este es el resumen. Este es el resumen. Este es el
-resumen. Este es el resumen. Este es el resumen. Este es el resumen.
-(aproximadamente 250 palabras).
+\textbf{Resumen}: En la presente investigacioón aplicamos distintas
+tecnicas con el fin de evaluar patrones de comportamiento en las
+cancelaciones de operaciones en Gran Bretaña. La información de la
+ocupación de camas nos parecia un dato muy relevante para agregar al
+análisis asi como tambien para entender el comportamiento de los datos.
+En su desarrollo hemos aplicado tecnicas de forecating con el fin de
+predecir el porcentaje de cancelación de operaciones lo que ayudaría
+principalmente a la correcta planifiación de los recursos en el sistema
+de salud britanico.
 \end{quote}
 
 \begin{quote}
@@ -96,117 +100,162 @@ Palabras clave: series de tiempo, sistema de salud, forecasting
 \hypertarget{introducciuxf3n}{%
 \section{Introducción}\label{introducciuxf3n}}
 
-Introducción. Explicar de dónde viene el dataset. Qué significa cada
-valor. Periodicidad de la serie (frecuencia de muestreo). Qué se
-entiende por operación ``electiva''. Qué tipo de instituciones son?
-públicas y privadas? O sólo públicas?
+Los quirófanos representan un costo considerable para los centros de
+salud dado que requieren una gran cantidad de recursos disponibles para
+garantizar su funcionamiento. Por este motivo, la subutilización de los
+quirófanos por parte de los centros de salud, va en detrimento de las
+finanzas del centro. En la presente investigación hemos trabajado con
+datos publicados por el servicio de salud de Inglaterra acerca de la
+cancelación a último minuto de operaciones electivas en hospitales
+públicos.
 
 \hypertarget{hipuxf3tesis-y-objetivos}{%
 \section{Hipótesis y objetivos}\label{hipuxf3tesis-y-objetivos}}
 
-Hipótesis y objetivos.
+El objetivo del presente trabajo es analizar la serie de tiempo de
+operaciones electivas canceladas para descubrir patrones en su
+comportamiento y realizar, de ser posible, un forecasting de valores
+futuros en el porcentaje de cancelaciones. También se busca analizar qué
+tanto contribuye el porcentaje de ocupación de camas trimestrales en los
+hospitales públicos al porcentaje de cancelación de operaciones
+electivas. Se cree que la variable ocupación de camas contribuye al
+aumento de la cancelaciones.
 
-Objetivo: analizar la serie de tiempo de operaciones canceladas para
-descubrir patrones en su comportamiento, ver si existe correlación con
-ocupación de las camas de internación, hacer forecasting de porcentaje
-de cancelación. Todo esto podría contribuir a una mejor asignación de
-recursos del sistema de salud y toma de decisión de gestión sanitaria.
+El resultado de este tipo de análisis podría contribuir a una mejor
+asignación de recursos del sistema de salud y toma de decisión de
+gestión sanitaria.
 
 \hypertarget{material-y-muxe9todos}{%
 \section{Material y métodos}\label{material-y-muxe9todos}}
 
-Material y métodos.
+Los datos utilizados corresponden a aquellos publicados por el servicio
+de salud de Inglaterra acerca de las operaciones electivas en centros de
+salud públicos \footnote{\url{https://www.england.nhs.uk/statistics/statistical-work-areas/cancelled-elective-operations/}}.
+El dataset consta de datos trimestrales sobre:
 
-R, RStudio. Librerías: tidyverse, zoo, xts, forecast, seasonal.
+\begin{itemize}
+\tightlist
+\item
+  Cantidad de operaciones electivas programadas (no incluye
+  procedimientos ambulatorios menores).
+\item
+  Cantidad de cancelaciones de operaciones a último minuto por parte del
+  hospital debido a motivos no clínicos.
+\item
+  Cantidad de pacientes no tratados en un lapso 28 días posteriores a la
+  cancelación (este punto no fue incorporado al análisis).
+\end{itemize}
+
+Ejemplos de motivos de cancelaciones (son no clínicos):
+
+\begin{itemize}
+\tightlist
+\item
+  Cirujano no disponible
+\item
+  Anestesista no disponible
+\item
+  Otro personal no disponible
+\item
+  Cama de sala no disponible
+\item
+  Cama de cuidados intensivos no disponible
+\item
+  Caso de emergencia que necesita quirófano
+\item
+  Falla en el equipamiento médico
+\item
+  Error administrativo
+\end{itemize}
+
+Dado que el dataset no aporta estadísticas sobre la prevalencia de los
+motivos de cancelación, se utiliza otro data set provisto por el
+servicio de salud de Inglaterra referido al porcentaje de ocupación de
+las camas de internación en sus hospitales públicos \footnote{\url{https://www.england.nhs.uk/statistics/statistical-work-areas/bed-availability-and-occupancy/}}
+para analizar qué tanto aporta esta variable a la cancelación. El data
+set de ocupación se encuentra diferenciado por camas para internación
+diurna o nocturna.
+
+El análisis de series temporales tiene utilidad en el estudio de la
+relación entre variables que cambian con el tiempo y que pueden llegar a
+influenciarse entre sí. Los datos se pueden comportar de diferentes
+maneras a través del tiempo: puede que se presente una tendencia,
+estacionalidad o simplemente no presenten una forma definida.
+
+Se utilizaron los siguientes conceptos:
+
+\begin{itemize}
+\tightlist
+\item
+  Descomposición de series temporales
+\item
+  Análisis en el dominio de la frecuencia
+\item
+  Autocorrelación de una serie temporal
+\item
+  Forecasting
+\item
+  Correlación entre series de tiempo
+\end{itemize}
+
+La investigación fue realizada con R versión 4.0.2 en el IDE RStudio.
+Las principales librerías utilizadas fueron: tidyverse, zoo, xts,
+forecast, seasonal. Para el presente informe se utilizó RMarkdown.
 
 \hypertarget{resultados}{%
 \section{Resultados}\label{resultados}}
 
-Gráfico temporal de todas las series en el dataset de operaciones
-canceladas.
-
-\hypertarget{respecto-al-porcentaje-de-cancelaciones}{%
-\subsubsection{Respecto al porcentaje de
-cancelaciones}\label{respecto-al-porcentaje-de-cancelaciones}}
-
-Fuerte estacionalidad (sube, baja, sube, baja). Algo pasó en 2001 que
-aumentó el porcentaje de cancelaciones (casi el doble que en otros
-trimestres). Además, entre el 2000 y el 2010 parecería haber una
-tendencia a disminuir. Luego, en 2010 parece haber un cambio de
-tendencia y empieza a aumentar ligeramente.
-
-\hypertarget{respecto-al-total-de-opraciones}{%
-\subsubsection{Respecto al total de
-opraciones}\label{respecto-al-total-de-opraciones}}
-
-Clara tendencia a aumentar.
+Se analiza la cancelación de operaciones como porcentaje del total de
+operaciones para quitarle la tendencia ascendente que tiene esta última.
+Se observa que dicho porcentaje tiene un pico en 2001 (casi el doble que
+en otros trimestres) y depresión entre 2010 y 2012. En la descomposición
+multiplicativa, la curva suavizada resultante muestra dichas
+oscilaciones no estacionales. También, se evidencia la fuerte
+estacionalidad de los datos.
 
 \includegraphics{cancelled_operations_report_files/figure-latex/series-1.pdf}
 
-Viendo el filtro moving average también se evidencia el aumento en 2001.
+\includegraphics{cancelled_operations_report_files/figure-latex/classical-decomposition-1.pdf}
 
-\begin{verbatim}
-## Warning: Removed 4 row(s) containing missing values (geom_path).
-\end{verbatim}
-
-\includegraphics{cancelled_operations_report_files/figure-latex/moving-average-1.pdf}
-
-\hypertarget{anuxe1lisis-a-partir-de-los-gruxe1ficos-de-estacionalidad}{%
-\subsubsection{Análisis a partir de los gráficos de
-estacionalidad}\label{anuxe1lisis-a-partir-de-los-gruxe1ficos-de-estacionalidad}}
-
-En el siguiente gráfico se ve que el pico fue en realidad en el último
-trimestre de 2000 pero que todo el 2000 fue alto. También el 2001 fue
-alto, aunque luego fue bajando.
-
-Yo veo, además, que el primer y segundo trimestres suelen ser más bajos
-que el tercero y el cuarto. El 2010 fue distinto porque el Q4 fue
-bastante menor al Q3.
+Comparando los ciclos anuales, se observa que el pico ocurrió
+específicamente en el último trimestre de 2000 pero que todo el 2000 fue
+atípicamente alto. También el 2001 fue alto, aunque luego fue bajando.
+Tanto en este gráfico como en el de subestacionalidad se ve que los
+primeros dos trimestres son, en promedio, más bajos que el tercero y el
+cuarto.
 
 \includegraphics{cancelled_operations_report_files/figure-latex/seasonal-plot-year-1.pdf}
 
-En el siguiente gráfico se ve que los primeros dos trimestres son, en
-promedio, más bajos que el tercero y el cuarto.
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/unnamed-chunk-1-1} \end{center}
 
-\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/seasonal-plot-quarter-1} \end{center}
-
-Autocorrelación
+Respecto a la autocorrelación, se ve que el pico más alto está en 4. Los
+picos tienden a tener una separación de 4 (observaciones) trimestres y
+van disminuyendo en su amplitud. Forman picos debido a la
+estacionalidad. El hecho de que la correlación sea positiva en casi
+todos los lags se debe a que la serie tiene una tendencia positiva.
 
 \begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/acf-1} \end{center}
 
 Gráfico de la fft de porcentaje de operaciones canceladas. Se distinguen
-2 picos bien marcados (a parte del valor del índice 1\ldots este sería
-el valor de continua???)
+2 picos bien marcados (a parte del valor del índice 1.
 
 \begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/fft-1} \end{center}
 
 \begin{longtable}[]{@{}rr@{}}
 \toprule
-valor & posicion\tabularnewline
+Valor & Frecuencia\tabularnewline
 \midrule
 \endhead
-1677577.0 & 1\tabularnewline
-136952.8 & 3\tabularnewline
-119513.9 & 27\tabularnewline
+1677577 & 1\tabularnewline
+136953 & 3\tabularnewline
+119514 & 27\tabularnewline
 \bottomrule
 \end{longtable}
-
-Descomposición de la señal. El cuarto gráfico es como el de moving
-average. Después podemos ver con cuál nos quedamos.
-
-\includegraphics{cancelled_operations_report_files/figure-latex/classical-decomposition-1.pdf}
 
 \hypertarget{forecasting}{%
 \subsection{Forecasting}\label{forecasting}}
 
-Forecast simple (preliminar).
-
-\includegraphics{cancelled_operations_report_files/figure-latex/forecast-1.pdf}
-
-\hypertarget{auto-arima-forecast}{%
-\subsubsection{Auto ARIMA forecast}\label{auto-arima-forecast}}
-
-Se aplica un ARIMA automático con estacionalidad.
+Para el forecasting se aplica un ARIMA automático con estacionalidad.
 
 \begin{verbatim}
 ## Series: tt 
@@ -217,56 +266,120 @@ Se aplica un ARIMA automático con estacionalidad.
 ##       0.8637  -0.8829
 ## s.e.  0.0546   0.0618
 ## 
-## sigma^2 estimated as 9.364e-07:  log likelihood=544.63
-## AIC=-1083.25   AICc=-1083   BIC=-1075.47
+## sigma^2 estimated as 0.009364:  log likelihood=88.72
+## AIC=-171.43   AICc=-171.18   BIC=-163.65
 \end{verbatim}
 
 \includegraphics{cancelled_operations_report_files/figure-latex/auto-arima-1.pdf}
 
+Residuos del forecast:
+
+\includegraphics{cancelled_operations_report_files/figure-latex/auto-arima-residuals-1.pdf}
+
 \hypertarget{correlaciuxf3n-con-ocupaciuxf3n-de-camas}{%
-\subsection{Correlación con ocupación de
+\subsection{correlación con ocupación de
 camas}\label{correlaciuxf3n-con-ocupaciuxf3n-de-camas}}
 
-\hypertarget{correlaciuxf3n-con-ocupaciuxf3n-de-camas-por-el-duxeda.}{%
-\paragraph{Correlación con ocupación de camas por el
-día.}\label{correlaciuxf3n-con-ocupaciuxf3n-de-camas-por-el-duxeda.}}
-
-Mirando el gráfico de dispersión, no parece haber una relación tan clara
-entre ambas.
+\hypertarget{ocupaciuxf3n-de-camas-diurnas}{%
+\subsubsection{Ocupación de camas
+(Diurnas)}\label{ocupaciuxf3n-de-camas-diurnas}}
 
 \begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-day-beds-1} \end{center}
 
+Correlación lineal con Ocupación de camas (Diurnas).
+
 \begin{verbatim}
 ## `geom_smooth()` using formula 'y ~ x'
 \end{verbatim}
 
-\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-day-beds-2} \end{center}
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-day-beds2-1} \end{center}
 
-\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-day-beds-3} \end{center}
+Correlación temporal con Ocupación de camas (Diurnas):
 
-\hypertarget{correlaciuxf3n-con-camas-duxedanoche.}{%
-\paragraph{Correlación con camas
-día+noche.}\label{correlaciuxf3n-con-camas-duxedanoche.}}
+Un aumento (o disminución) en el \% de ocupación de las camas diurnas
+por sobre la media, tiene correlación con un aumento (o disminución) en
+el \% de cancelación de operaciones 1 año (4 muestras) después.
 
-En el gráfico de dispersión se ve una relación entre ambas. En decir,
-cuando hay mucha ocupación de camas nocturnas, hay mayor porcentaje de
-cancelación de operaciones. Esta relación (aparentemente lineal) no
-implica causalidad.
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-day-beds3-1} \end{center}
+
+\hypertarget{ocupaciuxf3n-de-camas-nocturnas}{%
+\subsubsection{Ocupación de camas
+(Nocturnas)}\label{ocupaciuxf3n-de-camas-nocturnas}}
+
+La correlación temporal entre las señales no muestra un claro anticipo
+de una a la otra.
 
 \begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-overnight-beds-1} \end{center}
 
+Correlación lineal con Ocupación de camas (Nocturnas).
+
 \begin{verbatim}
 ## `geom_smooth()` using formula 'y ~ x'
 \end{verbatim}
 
-\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-overnight-beds-2} \end{center}
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-overnight-beds2-1} \end{center}
 
-\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-overnight-beds-3} \end{center}
+Correlación temporal con Ocupación de camas (Nocturnas).
+
+\begin{center}\includegraphics{cancelled_operations_report_files/figure-latex/corr-overnight-beds3-1} \end{center}
 
 \hypertarget{discusiuxf3n-y-conclusiones}{%
 \section{Discusión y conclusiones}\label{discusiuxf3n-y-conclusiones}}
 
+La principal característica encontrada en la serie temporal de
+porcentaje de cancelación de operaciones electivas es su marcada
+estacionalidad. Tiene un periodo anual, dentro del cual se evidencia un
+mayor porcentaje de cancelación en la segunda mitad del año respecto a
+la primera mitad. El pico anual se suele alcanzar en el último trimestre
+del año. Este fenómeno podría estar explicado por un aumento en la
+ocupación de las camas que se da en la época invernal.
+
+También parecería existir un ciclo, no asociado al calendario, más
+amplio. Además, existe una elevación atípica alrededor del año 2001 y
+una depresión alrededor del 2011. Globalmente, la serie de cancelaciones
+presenta una ligera tendencia a aumentar.
+
+El modelo de forecasting resultó satisfactorio ya que los residuos se
+aproximan a una distribución normal y prácticamente no muestran
+autocorrelación, es decir que se parecen al ruido blanco (aleatorio).
+Existió solamente un pico significativo en la autocorrelación de los
+residuos. Además, estos se ven menos ``aleatorios'' alrededor de las
+irregularidades de la serie en los años 2001 y 2011. Estos últimos
+hallazgos en los residuos del modelo dan cuenta de que existe una
+pequeña parte de la información de la serie que no logró ser capturada
+por el modelo.
+
+Respecto a la correlación con la ocupación de camas diurnas, se observa
+que no existe una clara relación lineal pero sí temporal. Sin embargo,
+al incorporar la información de las camas de noche si se observa una
+fuerte relación lineal, pero no una clara relación temporal con las
+cancelaciones de operaciones.
+
+Se concluye que el conjunto de técnicas aplicadas fuer lo
+suficientemente sensible como para detectar patrones interesantes en los
+datos así como también verificar la hipótesis de la correlación entre la
+ocupación de camas y el aumento de la cancelación de operaciones.
+
+Como mejoras al proyecto, se sugiere realizar alguna transformación
+sobre la serie previo a aplicar el modelo ARIMA para que este pueda
+capturar por completo sus cualidades.
+
+Sería interesante, además, incorporar variables internas de la
+administración sanitaria, así como también de tipo contextuales del país
+en estudio.
+
+Futuramente, se intentará replicar este estudio en datos de la República
+Argentina con el fin de contribuir a mejorar la planificación de los
+recursos en la gestión del sistema de salud.
+
 \hypertarget{bibliografuxeda}{%
 \section{Bibliografía}\label{bibliografuxeda}}
+
+Hyndman, R.J., \& Athanasopoulos, G. (2018) Forecasting: principles and
+practice, 2nd edition, OTexts: Melbourne, Australia.
+\href{OTexts.com/fpp2}{https://otexts.com/fpp2/}. Accedido el 22 de
+octubre de 2020.
+
+Theopahno Mitsa (2010) Temporal Data Mining, Chapman and Hall/CRC
 
 \end{document}

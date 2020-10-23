@@ -1,0 +1,277 @@
+---
+title: "Análisis de cancelación de operaciones en Inglaterra"
+author: "Malena Álvarez Brito, Florencia Florio"
+date: "19/10/2020"
+output:
+  beamer_presentation:
+    theme: "Boadilla"
+    colortheme: "seahorse"
+    fonttheme: "structurebold"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+
+library(knitr)
+library(tidyverse)
+library(zoo)
+library(xts)
+library(forecast)
+library(seasonal)
+library(ggpubr)
+```
+
+```{r data-loading}
+operations <- readRDS("data/processed/cancelled_operations_1994_to_2019.rds")
+day_beds_occupancy <- readRDS("data/processed/day_beds_occupancy_2010Q1_to_2020Q1.rds")
+night_beds_occupancy <- readRDS("data/processed/overnight_beds_occupancy_2010Q1_to_2020Q1.rds")
+```
+
+## Agenda
+
+- Introducción al dataset
+- Motivación de la investigación (Hipótesis y Objetivos)
+- Autocorrelación
+- Forecasting
+- Correlación con Ocupación de Camas
+- Conclusiones
+- Próximos Pasos
+
+## Introducción al dataset
+
+- Datos acerca de las operaciones en el sistema de salud pública de Inglaterra:
+  - Operaciones electivas totales (no incluye procedimientos ambulatorios menores)
+  - Cancelaciones de operaciones a último minuto por parte del hospital que no son reprogramados para las 24hs posteriores
+  
+
+- Ejemplos de motivos de cancelaciones (son no clínicos):
+  - Cirujano no disponible
+  - Anestesista no disponible
+  - Cama de sala no disponible
+  - Caso de Emergencia que necesita quirófano
+  - Falla en el equipamiento médico
+  
+Fuente: https://www.england.nhs.uk/statistics/statistical-work-areas/cancelled-elective-operations/
+  
+## Motivación de la investigación
+
+- Analizar la serie de tiempo de operaciones canceladas para descubrir patrones en su comportamiento
+- Analizar qué tanto contribuye la ocupación de camas en la cancelación de operaciones
+- Hacer forecasting de porcentaje de cancelación
+
+Todo esto podría contribuir a una mejor asignación de recursos del sistema de salud y toma de decisión de gestión sanitaria.
+
+## Inspección del dataset
+
+```{r series, fig.height=6}
+operations %>% 
+  pivot_longer(2:6, names_to = "serie", values_to = "valor") %>% 
+  filter(serie %in% c("elective_admissions",
+                      "cancelled_operations_perc")) %>%
+  ggplot(aes(x = year_quarter, y = valor)) +
+  geom_line(group = 1) + 
+  facet_grid(vars(serie), scales = "free_y") +
+  xlab("Año-Trimestre") + 
+  ylab("Cantidad                                          Porcentaje") +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  theme_light()
+```
+
+## Inspección del dataset
+
+- Se analiza la cancelación como porcentaje para quitarle la tendencia ascendente que tiene el número absoluto de operaciones
+- Se observa pico en 2001 (casi el doble que en otros trimestres)
+- Se observa depresión entre 2010 y 2012
+
+## Descomposición
+
+```{r classical-decomposition, fig.height=5}
+# convert to ts
+x <- xts(operations[,"cancelled_operations_perc"], order.by = as.yearqtr(operations$year_quarter))
+tt <- as.ts(as.zoo(x))
+
+tt %>% decompose(type="multiplicative") %>%
+  autoplot() + xlab("Year") +
+  ggtitle("Descomposición multiplicativa clásica") +
+  theme_light()
+```
+
+- Se evidencia fuerte estacionalidad de los datos
+- La curva suavizada muestra el pico de 2001 y la depresión entre 2010 y 2012
+
+## Estacionalidad
+
+```{r seasonal-plot-year, fig.height=5}
+# seasonal plot
+ggseasonplot(tt, year.labels = TRUE, year.labels.left = TRUE) +
+  ylab("% de cancelación") +
+  ggtitle("Gráfico estacional") +
+  theme_light()
+```
+
+## Estacionalidad
+
+- El pico fue en el último trimestre del 2000 (aunque todo el año tuvo un alto porcentaje de cancelaciones)
+- El primer y segundo trimestre suelen ser mas bajos que el tercero y cuarto
+
+## Estacionalidad
+
+```{r, fig.height=2, fig.width=5, fig.align='center'}
+ggsubseriesplot(tt) +
+  xlab("Trimestre (Quarter)") +
+  ylab("% de cancelación") +
+  ggtitle("Gráfico de subestacionalidad") +
+  theme_light()
+```
+
+- Nuevamente que los dos primeros trimestres del año, en promedio, resultan ser mal altos que los dos últimos.
+
+## Autocorrelación
+
+```{r acf, fig.height=2, fig.width=5, fig.align='center'}
+ggAcf(tt, lag.max = 24) +
+  ggtitle("Autocorrelación") +
+  theme_light()
+```
+
+- Debido a la estacionalidad, los picos de la ACF tienden a tener una separación de 4 muestras que van disminuyendo su amplitud.
+- El hecho de que la correlación sea positiva en casi todos los lags se debe a que la serie tiene una tendencia positiva.
+
+## Dominio de la frecuencia
+
+```{r fft, fig.height=3, fig.width=5, fig.align='center'}
+# calcular la transformada rápida de fourier
+fft <- fft(operations$cancelled_operations)
+
+mod_fft <- Mod(fft) # tomo el módulo de la fft
+mod_fft <- mod_fft[1:ceiling(length(mod_fft)/2)] # me quedo con la primer mitad (el resto es espejo)
+
+ggplot() + geom_line(aes(x = seq_along(mod_fft), y = mod_fft)) +
+  scale_x_continuous(breaks = seq(0, 52, by = 5)) +
+  theme_light()
+```
+
+## Forecast
+
+Se aplica un ARIMA con estacionalidad:
+
+```{r auto-arima, fig.height=5}
+arima_fit <- auto.arima(tt, seasonal = TRUE)
+plot(forecast(arima_fit, h = 20), include = 80)
+```
+
+## Análisis de los residuos del forecast
+
+```{r auto-arima-residuals, fig.height=6}
+checkresiduals(arima_fit, test = FALSE)
+```
+
+## Ocupación de camas (Diurnas)
+
+```{r corr-day-beds, fig.height=3, fig.width=5, fig.align='center'}
+# filtro para que empiece desde el mismo punto que la serie de las camas
+operations_2010_2019 <- operations %>%
+  filter(year_quarter >= "2010 Q1") %>%
+  select(cancelled_operations_perc) %>%
+  unlist()
+
+day_beds_occupancy <- day_beds_occupancy %>%
+  filter(year_quarter <= "2019 Q3")
+
+x2 <- xts(day_beds_occupancy[,2], order.by = as.yearqtr(day_beds_occupancy$year_quarter))
+tt2 <- as.ts(as.zoo(x2))
+
+autoplot(tt2) + xlab("Año") + ylab("% de ocupación")
+```
+
+## Correlación lineal con Ocupación de camas (Diurnas)
+
+```{r corr-day-beds2, fig.height=2, fig.width=5, fig.align='center'}
+day_beds_occupancy_2010_2019 <- day_beds_occupancy %>%
+  filter(year_quarter <= "2019 Q3") %>%
+  select(occupancy_all_types) %>%
+  unlist()
+
+df_db <- data.frame(op_10_19 = operations_2010_2019,
+                 db_10_19 = day_beds_occupancy_2010_2019)
+
+ggscatter(df_db, x = "db_10_19", y = "op_10_19", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Ocupación de camas diurnas (%)", ylab = "Operaciones canceladas (%)")
+```
+
+## Correlación temporal con Ocupación de camas (Diurnas)
+
+```{r corr-day-beds3, fig.height=2, fig.width=5, fig.align='center'}
+# correlación con ccf
+ggCcf(operations_2010_2019, day_beds_occupancy_2010_2019, lag.max = 39) +
+  ggtitle("Canc. de operaciones y Ocup. de camas diurnas") +
+  theme_light()
+```
+
+Un aumento (o disminución) en el % de ocupación de las camas diurnas por sobre la media, tiene correlación con un aumento (o disminución) en el % de cancelación de operaciones 1 año (4 muestras) después.
+
+## Ocupación de camas (Nocturnas)
+
+```{r corr-overnight-beds, fig.height=3, fig.width=5, fig.align='center'}
+night_beds_occupancy <- night_beds_occupancy %>%
+  filter(year_quarter <= "2019 Q3")
+
+x2 <- xts(night_beds_occupancy[,2], order.by = as.yearqtr(night_beds_occupancy$year_quarter))
+tt2 <- as.ts(as.zoo(x2))
+
+autoplot(tt2) + xlab("Año") + ylab("% de ocupación")
+```
+
+La correlación temporal entre las señales no muestra un claro anticipo de una a la otra.
+
+## Correlación lineal con Ocupación de camas (Nocturnas)
+
+```{r corr-overnight-beds2, fig.height=2, fig.width=5, fig.align='center'}
+night_beds_occupancy_2010_2019 <- night_beds_occupancy %>%
+  filter(year_quarter <= "2019 Q3") %>%
+  select(occupancy_all_types) %>%
+  unlist()
+
+df_nb <- data.frame(op_10_19 = operations_2010_2019,
+                    nb_10_19 = night_beds_occupancy_2010_2019)
+
+ggscatter(df_nb, x = "nb_10_19", y = "op_10_19", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Ocupación de camas nocturnas (%)", ylab = "Operaciones canceladas (%)")
+```
+
+## Correlación temporal con Ocupación de camas (Nocturnas)
+
+```{r corr-overnight-beds3, fig.height=2, fig.width=5, fig.align='center'}
+# correlacion con ccf
+ggCcf(operations_2010_2019, night_beds_occupancy_2010_2019, lag.max = 39) +
+  ggtitle("Canc. de operaciones y Ocup. de camas nocturnas") +
+  theme_light()
+```
+
+## Conclusiones
+
+- Observamos a partir de los distintos gráficos temporales de las series de tiempo del data set evaluado contiene un fuerte componente de estacionalidad.
+
+- Se observan rangos con valores atípicos en el año 2001 con un aumento en el porcentaje de cancelaciones (el doble que en otros trimestres estudiados) y en el periodo de los años 2000 y 2010 se observa una tendencia marcada a disminuir la cantidad de cancelaciones.
+
+- Globalmente, muestra una tendencia positiva.
+
+- Las estaciones indican que la cancelación de operaciones resulta ser menor en los primeros dos trimestres del año.
+
+## Conclusiones
+
+- Con el objetivo de contribuir a ejecutar mejores decisiones en términos de planificación y cuidado de los recursos sanitarios del sistema de salud británico se realizó un forescating, se eligió a aplicar un ARIMA automático con estacionalidad. Por las características de los datos y su previo análisis preliminar se decidió que esta técnica resultaría la más adecuada para la cuestión a resolver.
+
+- El análisis con la ocupación de camas durante el día y a en función de un gráfico de dispersión pudimos observar que no existe una clara relación. Sin embargo, al incorporar la información de las camas de noche si se observa una fuerte relación, lo que nos permite inferir que cuando hay mucha ocupación de camas nocturnas existe un mayor número de cancelaciones de operaciones. Dicha relación posiblemente resulte lineal, no implica casualidad.
+
+- Finalmente, el conjunto de técnicas aplicadas fue lo suficientemente sensible para detectar las tendencias en los distintos trimestres a lo largo del año, existe un mayor número de cancelaciones finalizando el año.
+
+## Próximos pasos
+
+- Incorporar variables internas de la administración sanitaria, así como también de tipo contextuales del país en estudio.
+
+- Agregar mayor información histórica al data set. No solo puede ser bueno para mejorar la predicción sino también para observar patrones de comportamiento distintos a los encontrados en esta investigación.

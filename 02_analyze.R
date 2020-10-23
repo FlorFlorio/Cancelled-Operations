@@ -106,3 +106,4 @@ tt %>% seas() %>%
 tt %>%
   stl(t.window=13, s.window="periodic", robust=TRUE) %>%
   autoplot()
+

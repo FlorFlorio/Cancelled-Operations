@@ -70,4 +70,17 @@ Acf(res)
 # Auto ARIMA forecast
 arima_fit <- auto.arima(tt, seasonal = TRUE)
 print(arima_fit)
-plot(forecast(arima_fit, h = 20))
+autoplot(forecast(arima_fit, h = 10)) +
+  xlab("Año") + ylab("Porcentaje de cancelación")
+
+res <- residuals(arima_fit)
+
+autoplot(res) +
+  xlab("Año") + ylab("Porcentaje de cancelación") +
+  ggtitle("Residuos del forecast ARIMA")
+
+gghistogram(res) + ggtitle("Histogram of residuals")
+
+ggAcf(res) + ggtitle("ACF of residuals")
+
+checkresiduals(arima_fit)
